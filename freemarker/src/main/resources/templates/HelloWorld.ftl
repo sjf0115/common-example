@@ -1,0 +1,1 @@
+恭喜来自${address.prov}省${address.city}市的 ${user_name} 同学成功获取第一个 FreeMarker 程序！

@@ -13,6 +13,7 @@
         <module>opencsv</module>
         <module>common</module>
         <module>freemarker</module>
+        <module>fmpp</module>
     </modules>
 
     <properties>

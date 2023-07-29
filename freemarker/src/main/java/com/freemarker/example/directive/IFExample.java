@@ -9,18 +9,17 @@ import java.io.File;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.io.Writer;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 
 /**
- * 功能：assign 自定义变量指令
+ * 功能：if elseif else 逻辑判断指令
  * 作者：SmartSi
  * CSDN博客：https://smartsi.blog.csdn.net/
  * 公众号：大数据生态
  * 日期：2023/7/28 08:48
  */
-public class AssignExample {
+public class IFExample {
     public static void main(String[] args) {
         try {
             // 1. 创建 Configuration 实例
@@ -33,7 +32,7 @@ public class AssignExample {
 
 
             // 3. 加载模板
-            Template template = cfg.getTemplate("assign.ftl");
+            Template template = cfg.getTemplate("if.ftl");
 
             // 4. 显示生成的数据,将合并后的数据打印到控制台
             Writer out = new OutputStreamWriter(System.out);

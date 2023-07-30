@@ -5,3 +5,5 @@
         <#list 1..i as j>${j}*${i}=${j*i}<#sep> </#sep></#list>
     </#list>
 </#macro>
+
+<#assign mail = "lucy@qq.com">

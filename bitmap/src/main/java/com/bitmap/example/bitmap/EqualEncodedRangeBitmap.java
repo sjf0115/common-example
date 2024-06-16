@@ -19,7 +19,7 @@ public class EqualEncodedRangeBitmap {
             throw new IllegalArgumentException("Values should be non-negative");
         }
         // Bitmap个数
-        int size = maxValue;
+        int size = maxValue+1;
         this.rbm = new RoaringBitmap[size];
         for (int i = 0; i < size; i++) {
             this.rbm[i] = new RoaringBitmap();
@@ -44,7 +44,7 @@ public class EqualEncodedRangeBitmap {
     // between
     public RoaringBitmap between(int minValue, int maxValue) {
         RoaringBitmap bitmap = new RoaringBitmap();
-        for (int i = minValue-1; i < maxValue; i += 1) {
+        for (int i = minValue; i <= maxValue; i += 1) {
             bitmap.or(this.rbm[i]);
         }
         return bitmap;
@@ -52,14 +52,14 @@ public class EqualEncodedRangeBitmap {
 
     // 等于
     public RoaringBitmap eq(int value) {
-        return this.rbm[value-1];
+        return this.rbm[value];
     }
 
     // 不等于
     public RoaringBitmap neq(int value) {
         RoaringBitmap bitmap = new RoaringBitmap();
         for (int i = 0; i < this.size(); i += 1) {
-            if (i != value-1) {
+            if (i == value) {
                 continue;
             }
             bitmap.or(this.rbm[i]);
@@ -142,14 +142,13 @@ public class EqualEncodedRangeBitmap {
     }
 
     private int valueAt(int index) {
-        int value = 0;
         for (int i = 0; i < this.size(); i += 1) {
             // 查找位于哪个Bitmap中 位于Bitmap数组的下标即为value
             if (this.rbm[i].contains(index)) {
-                value |= (1 << i);
+                return i;
             }
         }
-        return value;
+        return -1;
     }
 
     private RoaringBitmap computeRange(int minValue, int maxValue, boolean negate) {

@@ -2,7 +2,7 @@ package com.bitmap.example.bsi.buffer;
 
 import com.bitmap.example.bsi.Pair;
 import com.bitmap.example.bsi.WritableUtils;
-import com.bitmap.example.bsi.intint.BitmapSliceIndex;
+import com.bitmap.example.bsi.intint.Bitmap32SliceIndex;
 import org.roaringbitmap.buffer.ImmutableRoaringBitmap;
 import org.roaringbitmap.buffer.MutableRoaringBitmap;
 
@@ -14,7 +14,7 @@ import java.util.List;
 /**
  * ImmutableBSI
  */
-public class ImmutableBitSliceIndex extends BitSliceIndexBase implements BitmapSliceIndex {
+public class ImmutableBitSliceIndex extends BitSliceIndexBase implements Bitmap32SliceIndex {
 
   /**
    * constructs a BSI use slice and ebM
@@ -90,11 +90,11 @@ public class ImmutableBitSliceIndex extends BitSliceIndexBase implements BitmapS
   }
 
 
-  public void add(BitmapSliceIndex otherBitmapSliceIndex) {
+  public void add(Bitmap32SliceIndex otherBitmapSliceIndex) {
     throw new UnsupportedOperationException("ImmutableBSI don't support add");
   }
 
-  public void merge(BitmapSliceIndex otherBitmapSliceIndex) {
+  public void merge(Bitmap32SliceIndex otherBitmapSliceIndex) {
     throw new UnsupportedOperationException("ImmutableBSI don't support merge");
   }
 

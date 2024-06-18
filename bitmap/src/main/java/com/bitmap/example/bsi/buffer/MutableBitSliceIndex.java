@@ -2,7 +2,7 @@ package com.bitmap.example.bsi.buffer;
 
 import com.bitmap.example.bsi.Pair;
 import com.bitmap.example.bsi.WritableUtils;
-import com.bitmap.example.bsi.intint.BitmapSliceIndex;
+import com.bitmap.example.bsi.intint.Bitmap32SliceIndex;
 import org.roaringbitmap.buffer.ImmutableRoaringBitmap;
 import org.roaringbitmap.buffer.MutableRoaringBitmap;
 
@@ -16,7 +16,7 @@ import java.util.Objects;
 /**
  * MutableBSI
  */
-public class MutableBitSliceIndex extends BitSliceIndexBase implements BitmapSliceIndex {
+public class MutableBitSliceIndex extends BitSliceIndexBase implements Bitmap32SliceIndex {
 
   private boolean runOptimized;
 

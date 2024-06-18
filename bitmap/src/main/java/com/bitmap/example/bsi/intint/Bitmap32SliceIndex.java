@@ -7,7 +7,7 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.List;
 
-public interface BitmapSliceIndex {
+public interface Bitmap32SliceIndex {
     int bitCount();
 
     long getLongCardinality();

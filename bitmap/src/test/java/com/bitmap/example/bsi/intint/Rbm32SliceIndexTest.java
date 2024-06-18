@@ -2,7 +2,6 @@ package com.bitmap.example.bsi.intint;
 
 import com.bitmap.example.bsi.Operation;
 import com.bitmap.example.bsi.Pair;
-import com.bitmap.example.bsi.intint.RoaringBitmapSliceIndex;
 import org.junit.jupiter.api.*;
 import org.roaringbitmap.RoaringBitmap;
 
@@ -18,15 +17,15 @@ import java.util.stream.IntStream;
  * RBBsiTest
  * created by haihuang@alibaba-inc.com on 2021/6/6
  */
-public class RBBsiTest {
+public class Rbm32SliceIndexTest {
     private Map<Integer, Integer> testDataSet = new HashMap<>();
 
-    private RoaringBitmapSliceIndex bsi;
+    private Rbm32SliceIndex bsi;
 
     @BeforeEach
     public void setup() {
         IntStream.range(1, 100).forEach(x -> testDataSet.put(x, x));
-        bsi = new RoaringBitmapSliceIndex(1, 99);
+        bsi = new Rbm32SliceIndex(1, 99);
         testDataSet.forEach((k, v) -> {
             bsi.setValue(k, v);
         });
@@ -49,9 +48,9 @@ public class RBBsiTest {
 
     @Test
     public void testMerge() {
-        RoaringBitmapSliceIndex bsiA = new RoaringBitmapSliceIndex();
+        Rbm32SliceIndex bsiA = new Rbm32SliceIndex();
         IntStream.range(1, 100).forEach(x -> bsiA.setValue(x, x));
-        RoaringBitmapSliceIndex bsiB = new RoaringBitmapSliceIndex();
+        Rbm32SliceIndex bsiB = new Rbm32SliceIndex();
         IntStream.range(100, 199).forEach(x -> bsiB.setValue(x, x));
         Assertions.assertEquals(bsiA.getExistenceBitmap().getLongCardinality(), 99);
         Assertions.assertEquals(bsiB.getExistenceBitmap().getLongCardinality(), 99);
@@ -66,14 +65,14 @@ public class RBBsiTest {
 
     @Test
     public void testClone() {
-        RoaringBitmapSliceIndex bsi = new RoaringBitmapSliceIndex(1, 99);
+        Rbm32SliceIndex bsi = new Rbm32SliceIndex(1, 99);
         List<Pair<Integer, Integer>> collect = testDataSet.entrySet()
                 .stream().map(x -> Pair.newPair(x.getKey(), x.getValue())).collect(Collectors.toList());
 
         bsi.setValues(collect);
 
         Assertions.assertEquals(bsi.getExistenceBitmap().getLongCardinality(), 99);
-        final RoaringBitmapSliceIndex clone = bsi.clone();
+        final Rbm32SliceIndex clone = bsi.clone();
 
         IntStream.range(1, 100).forEach(x -> {
             Pair<Integer, Boolean> bsiValue = clone.getValue(x);
@@ -85,9 +84,9 @@ public class RBBsiTest {
 
     @Test
     public void testAdd() {
-        RoaringBitmapSliceIndex bsiA = new RoaringBitmapSliceIndex();
+        Rbm32SliceIndex bsiA = new Rbm32SliceIndex();
         IntStream.range(1, 100).forEach(x -> bsiA.setValue(x, x));
-        RoaringBitmapSliceIndex bsiB = new RoaringBitmapSliceIndex();
+        Rbm32SliceIndex bsiB = new Rbm32SliceIndex();
         IntStream.range(1, 120).forEach(x -> bsiB.setValue(x, x));
 
         bsiA.add(bsiB);
@@ -106,18 +105,18 @@ public class RBBsiTest {
 
     @Test
     public void testAddAndEvaluate() {
-        RoaringBitmapSliceIndex bsiA = new RoaringBitmapSliceIndex();
+        Rbm32SliceIndex bsiA = new Rbm32SliceIndex();
         IntStream.range(1, 100).forEach(x -> bsiA.setValue(x, x));
-        RoaringBitmapSliceIndex bsiB = new RoaringBitmapSliceIndex();
+        Rbm32SliceIndex bsiB = new Rbm32SliceIndex();
         IntStream.range(1, 120).forEach(x -> bsiB.setValue(120 - x, x));
 
         bsiA.add(bsiB);
 
-        RoaringBitmap result = bsiA.compare(Operation.EQ, 120, 0, null);
+        RoaringBitmap result = bsiA.compare(Operation.EQ, 120);
         Assertions.assertTrue(result.getLongCardinality() == 99);
         Assertions.assertArrayEquals(result.toArray(), IntStream.range(1, 100).toArray());
 
-        result = bsiA.compare(Operation.RANGE, 1, 20, null);
+        result = bsiA.compareRange(1, 20);
         Assertions.assertTrue(result.getLongCardinality() == 20);
         Assertions.assertArrayEquals(result.toArray(), IntStream.range(100, 120).toArray());
     }
@@ -125,14 +124,14 @@ public class RBBsiTest {
 
     @Test
     public void TestIO4Stream() throws IOException {
-        RoaringBitmapSliceIndex bsi = new RoaringBitmapSliceIndex(1, 99);
+        Rbm32SliceIndex bsi = new Rbm32SliceIndex(1, 99);
         IntStream.range(1, 100).forEach(x -> bsi.setValue(x, x));
         ByteArrayOutputStream bos = new ByteArrayOutputStream();
         DataOutputStream bdo = new DataOutputStream(bos);
         bsi.serialize(bdo);
         byte[] data = bos.toByteArray();
 
-        RoaringBitmapSliceIndex newBsi = new RoaringBitmapSliceIndex();
+        Rbm32SliceIndex newBsi = new Rbm32SliceIndex();
 
         ByteArrayInputStream bis = new ByteArrayInputStream(data);
         DataInputStream bdi = new DataInputStream(bis);
@@ -149,13 +148,13 @@ public class RBBsiTest {
 
     @Test
     public void testIO4Buffer() throws IOException {
-        RoaringBitmapSliceIndex bsi = new RoaringBitmapSliceIndex(1, 99);
+        Rbm32SliceIndex bsi = new Rbm32SliceIndex(1, 99);
         IntStream.range(1, 100).forEach(x -> bsi.setValue(x, x));
         ByteBuffer buffer = ByteBuffer.allocate(bsi.serializedSizeInBytes());
         bsi.serialize(buffer);
 
         byte[] data = buffer.array();
-        RoaringBitmapSliceIndex newBsi = new RoaringBitmapSliceIndex();
+        Rbm32SliceIndex newBsi = new Rbm32SliceIndex();
         newBsi.deserialize(ByteBuffer.wrap(data));
         Assertions.assertEquals(newBsi.getExistenceBitmap().getLongCardinality(), 99);
 
@@ -169,7 +168,7 @@ public class RBBsiTest {
 
     @Test
     public void testIOFromExternal() {
-        RoaringBitmapSliceIndex bsi = new RoaringBitmapSliceIndex(1, 99);
+        Rbm32SliceIndex bsi = new Rbm32SliceIndex(1, 99);
         IntStream.range(1, 100).forEach(x -> bsi.setValue(x, x));
 
         IntStream.range(1, 100).forEach(x -> {
@@ -182,7 +181,7 @@ public class RBBsiTest {
 
     @Test
     public void testEQ() {
-        RoaringBitmapSliceIndex bsi = new RoaringBitmapSliceIndex(1, 99);
+        Rbm32SliceIndex bsi = new Rbm32SliceIndex(1, 99);
         IntStream.range(1, 100).forEach(x -> {
             if (x <= 50) {
                 bsi.setValue(x, 1);
@@ -192,35 +191,35 @@ public class RBBsiTest {
 
         });
 
-        RoaringBitmap bitmap = bsi.compare(Operation.EQ, 1, 0, null);
+        RoaringBitmap bitmap = bsi.compare(Operation.EQ, 1);
         Assertions.assertTrue(bitmap.getLongCardinality() == 50L);
 
     }
 
     @Test
     public void testNotEQ() {
-        bsi = new RoaringBitmapSliceIndex();
+        bsi = new Rbm32SliceIndex();
         bsi.setValue(1, 99);
         bsi.setValue(2, 1);
         bsi.setValue(3, 50);
 
-        RoaringBitmap result = bsi.compare(Operation.NEQ, 99, 0, null);
+        RoaringBitmap result = bsi.compare(Operation.NEQ, 99);
         Assertions.assertTrue(result.getLongCardinality() == 2);
         Assertions.assertArrayEquals(new int[]{2, 3}, result.toArray());
 
-        result = bsi.compare(Operation.NEQ, 100, 0, null);
+        result = bsi.compare(Operation.NEQ, 100);
         Assertions.assertTrue(result.getLongCardinality() == 3);
         Assertions.assertArrayEquals(new int[]{1, 2, 3}, result.toArray());
 
-        bsi = new RoaringBitmapSliceIndex();
+        bsi = new Rbm32SliceIndex();
         bsi.setValue(1, 99);
         bsi.setValue(2, 99);
         bsi.setValue(3, 99);
 
-        result = bsi.compare(Operation.NEQ, 99, 0, null);
+        result = bsi.compare(Operation.NEQ, 99);
         Assertions.assertTrue(result.isEmpty());
 
-        result = bsi.compare(Operation.NEQ, 1, 0, null);
+        result = bsi.compare(Operation.NEQ, 1);
         Assertions.assertTrue(result.getLongCardinality() == 3);
         Assertions.assertArrayEquals(new int[]{1, 2, 3}, result.toArray());
     }
@@ -230,79 +229,79 @@ public class RBBsiTest {
 
     @Test
     public void testGT() {
-        RoaringBitmap result = bsi.compare(Operation.GT, 50, 0, null);
+        RoaringBitmap result = bsi.compare(Operation.GT, 50);
         Assertions.assertTrue(result.getLongCardinality() == 49);
         Assertions.assertArrayEquals(IntStream.range(51, 100).toArray(), result.toArray());
 
-        result = bsi.compare(Operation.GT, 0, 0, null);
+        result = bsi.compare(Operation.GT, 0);
         Assertions.assertTrue(result.getLongCardinality() == 99);
         Assertions.assertArrayEquals(IntStream.range(1, 100).toArray(), result.toArray());
 
-        result = bsi.compare(Operation.GT, 99, 0, null);
+        result = bsi.compare(Operation.GT, 99);
         Assertions.assertTrue(result.isEmpty());
     }
 
 
     @Test
     public void testGE() {
-        RoaringBitmap result = bsi.compare(Operation.GE, 50, 0, null);
+        RoaringBitmap result = bsi.compare(Operation.GE, 50);
         Assertions.assertTrue(result.getLongCardinality() == 50);
         Assertions.assertArrayEquals(IntStream.range(50, 100).toArray(), result.toArray());
 
-        result = bsi.compare(Operation.GE, 1, 0, null);
+        result = bsi.compare(Operation.GE, 1);
         Assertions.assertTrue(result.getLongCardinality() == 99);
         Assertions.assertArrayEquals(IntStream.range(1, 100).toArray(), result.toArray());
 
-        result = bsi.compare(Operation.GE, 100, 0, null);
+        result = bsi.compare(Operation.GE, 100);
         Assertions.assertTrue(result.isEmpty());
     }
 
     @Test
     public void testLT() {
-        RoaringBitmap result = bsi.compare(Operation.LT, 50, 0, null);
+        RoaringBitmap result = bsi.compare(Operation.LT, 50);
         Assertions.assertTrue(result.getLongCardinality() == 49);
         Assertions.assertArrayEquals(IntStream.range(1, 50).toArray(), result.toArray());
 
-        result = bsi.compare(Operation.LT, Integer.MAX_VALUE, 0, null);
+        result = bsi.compare(Operation.LT, Integer.MAX_VALUE);
         Assertions.assertTrue(result.getLongCardinality() == 99);
         Assertions.assertArrayEquals(IntStream.range(1, 100).toArray(), result.toArray());
 
-        result = bsi.compare(Operation.LT, 1, 0, null);
+        result = bsi.compare(Operation.LT, 1);
         Assertions.assertTrue(result.isEmpty());
     }
 
 
     @Test
     public void testLE() {
-        RoaringBitmap result = bsi.compare(Operation.LE, 50, 0, null);
+        RoaringBitmap result = bsi.compare(Operation.LE, 50);
         Assertions.assertTrue(result.getLongCardinality() == 50);
         Assertions.assertArrayEquals(IntStream.range(1, 51).toArray(), result.toArray());
 
-        result = bsi.compare(Operation.LE, Integer.MAX_VALUE, 0, null);
+        result = bsi.compare(Operation.LE, Integer.MAX_VALUE);
         Assertions.assertTrue(result.getLongCardinality() == 99);
         Assertions.assertArrayEquals(IntStream.range(1, 100).toArray(), result.toArray());
 
-        result = bsi.compare(Operation.LE, 0, 0, null);
+        result = bsi.compare(Operation.LE, 0);
         Assertions.assertTrue(result.isEmpty());
     }
 
     @Test
     public void testRANGE() {
-        RoaringBitmap result = bsi.compare(Operation.RANGE, 10, 20, null);
+        RoaringBitmap result = bsi.compareRange(10, 20);
         Assertions.assertTrue(result.getLongCardinality() == 11);
         Assertions.assertArrayEquals(IntStream.range(10, 21).toArray(), result.toArray());
 
-        result = bsi.compare(Operation.RANGE, 1, 200, null);
+        result = bsi.compareRange(1, 200);
         Assertions.assertTrue(result.getLongCardinality() == 99);
         Assertions.assertArrayEquals(IntStream.range(1, 100).toArray(), result.toArray());
 
-        result = bsi.compare(Operation.RANGE, 1000, 2000, null);
+        result = bsi.compareRange(1000, 2000);
         Assertions.assertTrue(result.isEmpty());
     }
 
     @Test
     public void testSum() {
-        RoaringBitmapSliceIndex bsi = new RoaringBitmapSliceIndex(1, 99);
+        Rbm32SliceIndex bsi = new Rbm32SliceIndex(1, 99);
         IntStream.range(1, 100).forEach(x -> bsi.setValue(x, x));
 
         RoaringBitmap foundSet = RoaringBitmap.bitmapOf(IntStream.range(1, 51).toArray());
@@ -319,16 +318,16 @@ public class RBBsiTest {
 
     @Test
     public void testValueZero() {
-        bsi = new RoaringBitmapSliceIndex();
+        bsi = new Rbm32SliceIndex();
         bsi.setValue(0, 0);
         bsi.setValue(1, 0);
         bsi.setValue(2, 1);
 
-        RoaringBitmap result = bsi.compare(Operation.EQ, 0, 0, null);
+        RoaringBitmap result = bsi.compare(Operation.EQ, 0);
         Assertions.assertTrue(result.getLongCardinality() == 2);
         Assertions.assertArrayEquals(new int[]{0, 1}, result.toArray());
 
-        result = bsi.compare(Operation.EQ, 1, 0, null);
+        result = bsi.compare(Operation.EQ, 1);
         Assertions.assertTrue(result.getLongCardinality() == 1);
         Assertions.assertArrayEquals(new int[]{2}, result.toArray());
     }

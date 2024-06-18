@@ -1,4 +1,4 @@
-package com.bitmap.example.bsi;
+package com.bitmap.example.bsi.core;
 
 import java.io.DataInput;
 import java.io.DataOutput;

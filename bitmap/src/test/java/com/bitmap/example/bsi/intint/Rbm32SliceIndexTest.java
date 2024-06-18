@@ -1,7 +1,7 @@
 package com.bitmap.example.bsi.intint;
 
-import com.bitmap.example.bsi.Operation;
-import com.bitmap.example.bsi.Pair;
+import com.bitmap.example.bsi.core.Operation;
+import com.bitmap.example.bsi.core.Pair;
 import org.junit.jupiter.api.*;
 import org.roaringbitmap.RoaringBitmap;
 

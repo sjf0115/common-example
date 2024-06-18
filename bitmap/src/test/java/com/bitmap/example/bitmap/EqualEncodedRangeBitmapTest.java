@@ -1,9 +1,6 @@
 package com.bitmap.example.bitmap;
 
-import com.bitmap.example.bsi.Pair;
-import com.bitmap.example.bsi.longlong.Rbm64SliceIndex;
 import com.google.common.collect.Lists;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.roaringbitmap.RoaringBitmap;
@@ -13,7 +10,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.PrimitiveIterator;
 import java.util.stream.IntStream;
-import java.util.stream.LongStream;
 
 /**
  * 功能：

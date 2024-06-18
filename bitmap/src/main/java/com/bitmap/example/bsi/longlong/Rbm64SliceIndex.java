@@ -1,6 +1,6 @@
 package com.bitmap.example.bsi.longlong;
 
-import com.bitmap.example.bsi.Pair;
+import com.bitmap.example.bsi.core.Pair;
 import org.roaringbitmap.longlong.Roaring64NavigableMap;
 
 import java.io.DataOutput;

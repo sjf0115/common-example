@@ -1,6 +1,6 @@
 package com.bitmap.example.bsi.longlong;
 
-import com.bitmap.example.bsi.Pair;
+import com.bitmap.example.bsi.core.Pair;
 
 import java.io.DataOutput;
 import java.io.IOException;

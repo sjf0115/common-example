@@ -1,12 +1,10 @@
 package com.bitmap.example.bsi.longlong;
 
-import com.bitmap.example.bsi.Pair;
-import com.bitmap.example.bsi.longlong.Rbm64SliceIndex;
+import com.bitmap.example.bsi.core.Pair;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.stream.LongStream;

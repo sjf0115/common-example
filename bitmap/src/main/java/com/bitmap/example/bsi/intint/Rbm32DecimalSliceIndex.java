@@ -14,13 +14,13 @@ import java.util.Objects;
 import java.util.stream.IntStream;
 
 /**
- * 功能：Rbm32SliceIndex  Decimal
+ * 功能：Rbm32SliceIndex  十进制
  * 作者：SmartSi
  * CSDN博客：https://smartsi.blog.csdn.net/
  * 公众号：大数据生态
  * 日期：2024/6/16 00:52
  */
-public class Rbm32SliceIndex implements Bitmap32SliceIndex {
+public class Rbm32DecimalSliceIndex implements Bitmap32SliceIndex {
     private int maxValue;
     private int minValue;
     private RoaringBitmap[] rbm;
@@ -28,12 +28,12 @@ public class Rbm32SliceIndex implements Bitmap32SliceIndex {
     private Boolean runOptimized = false;
 
     // 构造器
-    public Rbm32SliceIndex(int minValue, int maxValue) {
+    public Rbm32DecimalSliceIndex(int minValue, int maxValue) {
         if (minValue < 0) {
             throw new IllegalArgumentException("Values should be non-negative");
         }
 
-        this.rbm = new RoaringBitmap[32 - Integer.numberOfLeadingZeros(maxValue)];
+        this.rbm = new RoaringBitmap[32 - (maxValue)];
         for (int i = 0; i < rbm.length; i++) {
             this.rbm[i] = new RoaringBitmap();
         }
@@ -41,11 +41,11 @@ public class Rbm32SliceIndex implements Bitmap32SliceIndex {
         this.ebm = new RoaringBitmap();
     }
 
-    public Rbm32SliceIndex() {
+    public Rbm32DecimalSliceIndex() {
         this(0, 0);
     }
 
-    public void add(Rbm32SliceIndex otherBsi) {
+    public void add(Rbm32DecimalSliceIndex otherBsi) {
         if (null == otherBsi || otherBsi.ebm.isEmpty()) {
             return;
         }
@@ -277,7 +277,7 @@ public class Rbm32SliceIndex implements Bitmap32SliceIndex {
         return this.ebm.contains(index.intValue());
     }
 
-    public void merge(Rbm32SliceIndex otherBsi) {
+    public void merge(Rbm32DecimalSliceIndex otherBsi) {
 
         if (null == otherBsi || otherBsi.ebm.isEmpty()) {
             return;
@@ -305,8 +305,8 @@ public class Rbm32SliceIndex implements Bitmap32SliceIndex {
         this.minValue = Integer.min(this.minValue, otherBsi.minValue);
     }
 
-    public Rbm32SliceIndex clone() {
-        Rbm32SliceIndex bitSliceIndex = new Rbm32SliceIndex();
+    public Rbm32DecimalSliceIndex clone() {
+        Rbm32DecimalSliceIndex bitSliceIndex = new Rbm32DecimalSliceIndex();
         bitSliceIndex.minValue = this.minValue;
         bitSliceIndex.maxValue = this.maxValue;
         bitSliceIndex.ebm = this.ebm.clone();

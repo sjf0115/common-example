@@ -273,8 +273,8 @@ public class Rbm32DecimalSliceIndex implements Bitmap32SliceIndex {
         return 4 + 4 + 1 + 4 + this.ebm.serializedSizeInBytes() + size;
     }
 
-    public boolean valueExist(Long index) {
-        return this.ebm.contains(index.intValue());
+    public boolean valueExist(int index) {
+        return this.ebm.contains(index);
     }
 
     public void merge(Rbm32DecimalSliceIndex otherBsi) {

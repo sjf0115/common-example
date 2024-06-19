@@ -45,6 +45,48 @@ public class Rbm32SliceIndex implements Bitmap32SliceIndex {
         this(0, 0);
     }
 
+    // 切片个数-最大值二进制位数
+    @Override
+    public int bitCount() {
+        return this.rbm.length;
+    }
+
+    // 基数
+    @Override
+    public long getLongCardinality() {
+        return this.ebm.getLongCardinality();
+    }
+
+    // 设置 index 的 value 值
+    @Override
+    public void setValue(int index, int value) {
+        ensureCapacityInternal(value, value);
+        setValueInternal(index, value);
+    }
+
+    // 计算 index 对应的值 value
+    @Override
+    public int getValue(int index) {
+        boolean exists = this.ebm.contains(index);
+        if (!exists) {
+            return -1;
+        }
+        return valueAt(index);
+    }
+
+    @Override
+    public void setValues(List<Pair<Integer, Integer>> values) {
+        int maxValue = values.stream().mapToInt(Pair::getRight).filter(Objects::nonNull).max().getAsInt();
+        int minValue = values.stream().mapToInt(Pair::getRight).filter(Objects::nonNull).min().getAsInt();
+        ensureCapacityInternal(minValue, maxValue);
+        for (Pair<Integer, Integer> pair : values) {
+            setValueInternal(pair.getKey(), pair.getValue());
+        }
+    }
+
+
+
+
     public void add(Rbm32SliceIndex otherBsi) {
         if (null == otherBsi || otherBsi.ebm.isEmpty()) {
             return;
@@ -108,15 +150,15 @@ public class Rbm32SliceIndex implements Bitmap32SliceIndex {
         return valueAt(maxValuesId.first());
     }
 
-    private int valueAt(int columnId) {
-        int value = 0;
-        for (int i = 0; i < this.bitCount(); i += 1) {
-            if (this.rbm[i].contains(columnId)) {
-                value |= (1 << i);
-            }
-        }
+    public boolean valueExist(int index) {
+        return this.ebm.contains(index);
+    }
 
-        return value;
+    private void clear() {
+        this.maxValue = 0;
+        this.minValue = 0;
+        this.ebm = null;
+        this.rbm = null;
     }
 
     public void runOptimize() {
@@ -130,54 +172,6 @@ public class Rbm32SliceIndex implements Bitmap32SliceIndex {
 
     public boolean hasRunCompression() {
         return this.runOptimized;
-    }
-
-    public RoaringBitmap getExistenceBitmap() {
-        return this.ebm;
-    }
-
-    @Override
-    public int bitCount() {
-        return this.rbm.length;
-    }
-
-    @Override
-    public long getLongCardinality() {
-        return this.ebm.getLongCardinality();
-    }
-
-    @Override
-    public void setValue(int columnId, int value) {
-        ensureCapacityInternal(value, value);
-        setValueInternal(columnId, value);
-    }
-
-    @Override
-    public void setValues(List<Pair<Integer, Integer>> values) {
-        int maxValue = values.stream().mapToInt(Pair::getRight).filter(Objects::nonNull).max().getAsInt();
-        int minValue = values.stream().mapToInt(Pair::getRight).filter(Objects::nonNull).min().getAsInt();
-        ensureCapacityInternal(minValue, maxValue);
-        for (Pair<Integer, Integer> pair : values) {
-            setValueInternal(pair.getKey(), pair.getValue());
-        }
-    }
-
-    @Override
-    public Pair<Integer, Boolean> getValue(int columnId) {
-        boolean exists = this.ebm.contains(columnId);
-        if (!exists) {
-            return Pair.newPair(0, false);
-        }
-
-        return Pair.newPair(valueAt(columnId), true);
-    }
-
-
-    private void clear() {
-        this.maxValue = 0;
-        this.minValue = 0;
-        this.ebm = null;
-        this.rbm = null;
     }
 
     @Override
@@ -271,10 +265,6 @@ public class Rbm32SliceIndex implements Bitmap32SliceIndex {
             size += rb.serializedSizeInBytes();
         }
         return 4 + 4 + 1 + 4 + this.ebm.serializedSizeInBytes() + size;
-    }
-
-    public boolean valueExist(Long index) {
-        return this.ebm.contains(index.intValue());
     }
 
     public void merge(Rbm32SliceIndex otherBsi) {
@@ -402,6 +392,7 @@ public class Rbm32SliceIndex implements Bitmap32SliceIndex {
 
     //------------------------------------------------------------------------------------------
 
+    // 切片空间
     private void ensureCapacityInternal(int minValue, int maxValue) {
         if (ebm.isEmpty()) {
             this.minValue = minValue;
@@ -415,36 +406,51 @@ public class Rbm32SliceIndex implements Bitmap32SliceIndex {
         }
     }
 
-    private void grow(int newBitDepth) {
-        int oldBitDepth = this.rbm.length;
+    // 增加切片空看-增加Bitmap个数
+    private void grow(int newBitNum) {
+        int bitNum = this.rbm.length;
 
-        if (oldBitDepth >= newBitDepth) {
+        if (bitNum >= newBitNum) {
             return;
         }
 
-        RoaringBitmap[] newBA = new RoaringBitmap[newBitDepth];
-        if (oldBitDepth != 0) {
-            System.arraycopy(this.rbm, 0, newBA, 0, oldBitDepth);
+        // 拷贝
+        RoaringBitmap[] newRbm = new RoaringBitmap[newBitNum];
+        if (bitNum != 0) {
+            System.arraycopy(this.rbm, 0, newRbm, 0, bitNum);
         }
 
-        for (int i = newBitDepth - 1; i >= oldBitDepth; i--) {
-            newBA[i] = new RoaringBitmap();
+        for (int i = newBitNum - 1; i >= bitNum; i--) {
+            newRbm[i] = new RoaringBitmap();
             if (this.runOptimized) {
-                newBA[i].runOptimize();
+                newRbm[i].runOptimize();
             }
         }
-        this.rbm = newBA;
+        this.rbm = newRbm;
     }
 
-    private void setValueInternal(int columnId, int value) {
+    // 设置值
+    private void setValueInternal(int index, int value) {
+        // 为 value 的每个切片 bitmap 添加 index
         for (int i = 0; i < this.bitCount(); i += 1) {
             if ((value & (1 << i)) > 0) {
-                this.rbm[i].add(columnId);
+                this.rbm[i].add(index);
             } else {
-                this.rbm[i].remove(columnId);
+                this.rbm[i].remove(index);
             }
         }
-        this.ebm.add(columnId);
+        this.ebm.add(index);
+    }
+
+    // 计算 index 的 value 值
+    private int valueAt(int index) {
+        int value = 0;
+        for (int i = 0; i < this.bitCount(); i += 1) {
+            if (this.rbm[i].contains(index)) {
+                value |= (1 << i);
+            }
+        }
+        return value;
     }
 
     // oNeil 比较算法实现

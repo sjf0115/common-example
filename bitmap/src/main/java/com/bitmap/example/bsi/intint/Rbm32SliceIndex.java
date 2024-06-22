@@ -64,16 +64,7 @@ public class Rbm32SliceIndex implements Bitmap32SliceIndex {
         setValueInternal(index, value);
     }
 
-    // 计算 index 对应的值 value
-    @Override
-    public int getValue(int index) {
-        boolean exists = this.ebm.contains(index);
-        if (!exists) {
-            return -1;
-        }
-        return valueAt(index);
-    }
-
+    // 批量设置 index 的 value 值
     @Override
     public void setValues(List<Pair<Integer, Integer>> values) {
         int maxValue = values.stream().mapToInt(Pair::getRight).filter(Objects::nonNull).max().getAsInt();
@@ -84,8 +75,21 @@ public class Rbm32SliceIndex implements Bitmap32SliceIndex {
         }
     }
 
+    // 计算 index 对应的值 value
+    @Override
+    public int getValue(int index) {
+        boolean exists = this.ebm.contains(index);
+        if (!exists) {
+            return -1;
+        }
+        return valueAt(index);
+    }
 
-
+    // 是否存在指定的 index
+    @Override
+    public boolean valueExist(int index) {
+        return this.ebm.contains(index);
+    }
 
     public void add(Rbm32SliceIndex otherBsi) {
         if (null == otherBsi || otherBsi.ebm.isEmpty()) {
@@ -101,7 +105,6 @@ public class Rbm32SliceIndex implements Bitmap32SliceIndex {
             this.addDigit(otherBsi.rbm[i], i);
         }
 
-        // update min and max after adding
         this.minValue = minValue();
         this.maxValue = maxValue();
     }
@@ -150,9 +153,7 @@ public class Rbm32SliceIndex implements Bitmap32SliceIndex {
         return valueAt(maxValuesId.first());
     }
 
-    public boolean valueExist(int index) {
-        return this.ebm.contains(index);
-    }
+
 
     private void clear() {
         this.maxValue = 0;

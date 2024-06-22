@@ -14,9 +14,10 @@ public interface Bitmap32SliceIndex {
     int bitCount();
     long getLongCardinality();
     void setValue(int index, int value);
-    int getValue(int index);
     void setValues(List<Pair<Integer, Integer>> values);
+    int getValue(int index);
     boolean valueExist(int index);
+
     RoaringBitmap compare(Operation operation, int value);
     RoaringBitmap compareRange(int start, int end);
 

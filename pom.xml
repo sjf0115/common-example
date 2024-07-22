@@ -15,6 +15,7 @@
         <module>freemarker</module>
         <module>fmpp</module>
         <module>bitmap</module>
+        <module>druid-parser</module>
     </modules>
 
     <properties>
@@ -36,6 +37,7 @@
         <junit.version>4.10</junit.version>
         <mapstruct.version>1.5.5.Final</mapstruct.version>
         <freemarker.version>2.3.31</freemarker.version>
+        <druid.version>1.2.20</druid.version>
     </properties>
 
     <dependencyManagement>
@@ -142,6 +144,13 @@
                 <groupId>org.freemarker</groupId>
                 <artifactId>freemarker</artifactId>
                 <version>${freemarker.version}</version>
+            </dependency>
+
+            <!-- SQL解析 阿里 Druid -->
+            <dependency>
+                <groupId>com.alibaba</groupId>
+                <artifactId>druid</artifactId>
+                <version>${druid.version}</version>
             </dependency>
 
             <!-- log4j -->

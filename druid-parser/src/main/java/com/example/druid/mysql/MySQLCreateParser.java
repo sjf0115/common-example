@@ -50,7 +50,7 @@ public class MySQLCreateParser implements CreateSQLParser<MySQLTable> {
             String dataType = definition.getDataType().getName();
             field.setFieldType(dataType);
             // 默认值
-            int extract = (Integer) SQLExprValueExtractor.extract(definition.getDefaultExpr());
+            Integer extract = (Integer) SQLExprValueExtractor.extract(definition.getDefaultExpr());
             // 约束 NOT NULL
             List<SQLColumnConstraint> constraints = definition.getConstraints();
             // OnUpdate

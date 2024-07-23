@@ -1,18 +1,23 @@
 package com.example.druid.mysql;
 
-import com.example.druid.core.CreateSQLParser;
+import com.example.druid.bean.MySQLTable;
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 
 /**
- * 功能：
+ * 功能：创建语句解析示例
  * 作者：SmartSi
  * CSDN博客：https://smartsi.blog.csdn.net/
  * 公众号：大数据生态
  * 日期：2024/7/23 07:30
  */
 public class CreateSQLSimple {
+
+    private static final Gson gson = new GsonBuilder().create();
+
     public static void main(String[] args) {
         MySQLParserFactory factory = new MySQLParserFactory();
-        CreateSQLParser parser = factory.createSQLParser();
+        MySQLCreateParser parser = (MySQLCreateParser)factory.createSQLParser();
         String sql = "CREATE TABLE IF NOT EXISTS `profile_meta_user`(\n" +
                 "    `id` BIGINT UNSIGNED AUTO_INCREMENT COMMENT '自增ID',\n" +
                 "    `status` INT NOT NULL DEFAULT 1 COMMENT '状态:1-启用,2-停用',\n" +
@@ -28,6 +33,8 @@ public class CreateSQLSimple {
                 "    index idx_user_id(`user_id`),\n" +
                 "    PRIMARY KEY (`id`)\n" +
                 ")ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT '画像-用户';";
-        parser.parse(sql);
+        MySQLTable table = parser.parse(sql);
+        String result = gson.toJson(table);
+        System.out.println(result);
     }
 }

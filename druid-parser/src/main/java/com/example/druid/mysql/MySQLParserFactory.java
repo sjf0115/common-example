@@ -3,7 +3,7 @@ package com.example.druid.mysql;
 import com.example.druid.core.*;
 
 /**
- * 功能：
+ * 功能：MySQL 解析器工厂
  * 作者：SmartSi
  * CSDN博客：https://smartsi.blog.csdn.net/
  * 公众号：大数据生态

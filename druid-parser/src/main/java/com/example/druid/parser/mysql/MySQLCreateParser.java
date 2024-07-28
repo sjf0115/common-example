@@ -1,4 +1,4 @@
-package com.example.druid.mysql;
+package com.example.druid.parser.mysql;
 
 import com.alibaba.druid.sql.ast.SQLExpr;
 import com.alibaba.druid.sql.ast.statement.SQLColumnConstraint;
@@ -6,10 +6,9 @@ import com.alibaba.druid.sql.ast.statement.SQLColumnDefinition;
 import com.alibaba.druid.sql.ast.statement.SQLCreateTableStatement;
 import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlCreateTableStatement;
 import com.alibaba.druid.sql.dialect.mysql.parser.MySqlCreateTableParser;
-import com.alibaba.druid.sql.dialect.mysql.visitor.MySqlSchemaStatVisitor;
-import com.example.druid.bean.MySQLTable;
-import com.example.druid.bean.MySQLTableField;
-import com.example.druid.core.CreateSQLParser;
+import com.example.druid.parser.bean.MySQLTable;
+import com.example.druid.parser.bean.MySQLTableField;
+import com.example.druid.parser.core.CreateSQLParser;
 import com.example.druid.utils.SQLExprValueExtractor;
 import com.google.common.collect.Lists;
 

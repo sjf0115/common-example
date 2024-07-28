@@ -1,4 +1,4 @@
-package com.example.druid.bean;
+package com.example.druid.parser.bean;
 
 import java.util.List;
 

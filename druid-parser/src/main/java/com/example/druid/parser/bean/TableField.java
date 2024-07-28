@@ -1,4 +1,4 @@
-package com.example.druid.bean;
+package com.example.druid.parser.bean;
 
 /**
  * 功能：表字段

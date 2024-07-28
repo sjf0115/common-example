@@ -1,6 +1,6 @@
-package com.example.druid.mysql;
+package com.example.druid.parser.mysql;
 
-import com.example.druid.core.*;
+import com.example.druid.parser.core.*;
 
 /**
  * 功能：MySQL 解析器工厂
@@ -17,7 +17,7 @@ public class MySQLParserFactory implements SQLParserFactory {
 
     @Override
     public SelectSQLParser selectSQLParser() {
-        return null;
+        return new MySQLSelectParser();
     }
 
     @Override

@@ -1,4 +1,4 @@
-package com.example.druid.core;
+package com.example.druid.parser.core;
 
 public interface SQLParserFactory {
     CreateSQLParser createSQLParser();

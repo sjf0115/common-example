@@ -1,6 +1,6 @@
-package com.example.druid.mysql;
+package com.example.druid.parser.mysql;
 
-import com.example.druid.bean.MySQLTable;
+import com.example.druid.parser.bean.MySQLTable;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 
@@ -11,7 +11,7 @@ import com.google.gson.GsonBuilder;
  * 公众号：大数据生态
  * 日期：2024/7/23 07:30
  */
-public class CreateSQLSimple {
+public class CreateSQLTest {
 
     private static final Gson gson = new GsonBuilder().create();
 

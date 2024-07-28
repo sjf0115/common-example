@@ -1,4 +1,4 @@
-package com.example.druid.core;
+package com.example.druid.parser.core;
 
 /**
  * 功能：创建语句解析

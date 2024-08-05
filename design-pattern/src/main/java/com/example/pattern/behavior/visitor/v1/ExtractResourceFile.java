@@ -1,4 +1,4 @@
-package com.example.pattern.behavior.visitor;
+package com.example.pattern.behavior.visitor.v1;
 
 import java.util.ArrayList;
 import java.util.List;

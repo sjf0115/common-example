@@ -1,4 +1,6 @@
-package com.example.pattern.behavior.visitor;
+package com.example.pattern.behavior.visitor.v1;
+
+import com.example.pattern.behavior.visitor.v1.ResourceFile;
 
 /**
  * 功能：Word 提取文本

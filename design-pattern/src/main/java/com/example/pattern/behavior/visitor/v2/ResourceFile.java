@@ -1,7 +1,7 @@
-package com.example.pattern.behavior.visitor;
+package com.example.pattern.behavior.visitor.v2;
 
 /**
- * 功能：资源文件
+ * 功能：资源文件 V2 版本
  * 作者：SmartSi
  * CSDN博客：https://smartsi.blog.csdn.net/
  * 公众号：大数据生态
@@ -12,6 +12,4 @@ public abstract class ResourceFile {
     public ResourceFile(String filePath) {
         this.filePath = filePath;
     }
-    // 转换Txt文件
-    public abstract void extract2txt();
 }

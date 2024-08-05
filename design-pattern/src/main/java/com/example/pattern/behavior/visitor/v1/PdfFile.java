@@ -1,4 +1,4 @@
-package com.example.pattern.behavior.visitor;
+package com.example.pattern.behavior.visitor.v1;
 
 /**
  * 功能：PDF 提取文本

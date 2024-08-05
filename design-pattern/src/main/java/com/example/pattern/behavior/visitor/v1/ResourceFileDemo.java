@@ -10,7 +10,7 @@ import java.util.List;
  * 公众号：大数据生态
  * 日期：2024/8/5 09:44
  */
-public class ExtractResourceFile {
+public class ResourceFileDemo {
     public static void main(String[] args) {
         List<ResourceFile> resourceFiles = new ArrayList<>();
         // 创建不同的资源文件

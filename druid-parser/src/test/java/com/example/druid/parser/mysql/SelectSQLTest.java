@@ -21,7 +21,7 @@ public class SelectSQLTest {
     public void testSimpleSelect() {
         MySQLParserFactory factory = new MySQLParserFactory();
         MySQLSelectParser parser = (MySQLSelectParser)factory.selectSQLParser();
-        String sql = "SELECT * FROM user_profile_user";
+        String sql = "SELECT id, name FROM user_profile_user";
         MySQLSelect select = parser.parse(sql);
         System.out.println(gson.toJson(select));
     }
@@ -49,6 +49,15 @@ public class SelectSQLTest {
         MySQLParserFactory factory = new MySQLParserFactory();
         MySQLSelectParser parser = (MySQLSelectParser)factory.selectSQLParser();
         String sql = "SELECT id, name FROM user_profile_behavior UNION ALL SELECT id, name AS id FROM user_profile_label";
+        MySQLSelect select = parser.parse(sql);
+        System.out.println(gson.toJson(select));
+    }
+
+    @Test
+    public void test() {
+        MySQLParserFactory factory = new MySQLParserFactory();
+        MySQLSelectParser parser = (MySQLSelectParser)factory.selectSQLParser();
+        String sql = "SELECT name, tag['id'] AS id FROM user_profile_user LATERAL VIEW EXPLODE(tags) tags AS tag WHERE age >= 18 AND name = 'Lily'";
         MySQLSelect select = parser.parse(sql);
         System.out.println(gson.toJson(select));
     }

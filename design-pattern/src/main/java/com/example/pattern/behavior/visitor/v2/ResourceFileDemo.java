@@ -24,7 +24,7 @@ public class ResourceFileDemo {
         // 提取文件
         for (ResourceFile resourceFile : resourceFiles) {
             // 编译报错
-            //extractor.extract2txt(resourceFile);
+            // extractor.extract2txt(resourceFile);
         }
     }
 }

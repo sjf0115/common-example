@@ -124,11 +124,11 @@ public class SQLTableSourceDemo {
                 "UNION ALL\n" +
                 "SELECT 'department' AS type, id, name\n" +
                 "FROM department";
-        //parseTableSource(unionQueryTableSourceSQL);
+        parseTableSource(unionQueryTableSourceSQL);
 
         // 6. SQLValuesTableSource
         String valuesTableSourceSQL = "SELECT id, name\n" +
                 "FROM Values ('1', 'Lucy'),('2', 'Lily') t(id, name)";
-        parseTableSource(valuesTableSourceSQL);
+        //parseTableSource(valuesTableSourceSQL);
     }
 }

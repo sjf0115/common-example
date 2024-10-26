@@ -1,7 +1,6 @@
 package com.example.druid.parser.hive;
 
 import com.alibaba.druid.sql.ast.SQLExpr;
-import com.alibaba.druid.sql.ast.SQLOrderBy;
 import com.alibaba.druid.sql.ast.SQLStatement;
 import com.alibaba.druid.sql.ast.expr.SQLAggregateExpr;
 import com.alibaba.druid.sql.ast.expr.SQLAllColumnExpr;
@@ -23,83 +22,88 @@ import java.util.Objects;
  */
 public class ParserQualityRules {
 
-    public class QualityRuleVisitor extends HiveSchemaStatVisitor {
+    // 质量规则1：禁止使用 SELECT *
+    public class SelectAllQualityRuleVisitor extends HiveSchemaStatVisitor {
         // 是否是 SELECT *
         private boolean isSelectAll = false;
-        // 是否是覆盖写
-        private boolean isInsertOverwrite = false;
-        // 是否是简单查询
-        private boolean isSimpleSelect = true;
+        @Override
+        public boolean visit(SQLAllColumnExpr expr) {
+            // 是否有 SELECT *
+            isSelectAll = true;
+            return false;
+        }
+    }
+
+    // 质量规则2：禁止使用 INSERT INTO SELECT
+    public class InsertIntoSelectQualityRuleVisitor extends HiveSchemaStatVisitor {
+        // 是否是 INSERT INTO SELECT
+        private boolean isInsertIntoSelect = false;
 
         @Override
         public boolean visit(HiveInsertStatement insertStatement) {
-            isInsertOverwrite = insertStatement.isOverwrite();
-            return super.visit(insertStatement);
-        }
-
-        @Override
-        public boolean visit(SQLSelectStatement selectStatement) {
-            if (Objects.equals(selectStatement, null)) {
-                isSimpleSelect = true;
-                return false;
-            }
-            SQLSelect select = selectStatement.getSelect();
-            SQLSelectQuery query = select.getQuery();
-            if (query instanceof SQLUnionQuery || query instanceof SQLSelectQueryBlock) {
-                return super.visit(selectStatement);
+            boolean overwrite = insertStatement.isOverwrite();
+            SQLSelect query = insertStatement.getQuery();
+            if (!overwrite && !Objects.equals(query, null)) {
+                isInsertIntoSelect = true;
             }
             return false;
         }
+    }
+
+    // 质量规则3：禁止使用简单查询
+    public class SimpleQueryQualityRuleVisitor extends HiveSchemaStatVisitor {
+        // 是否是简单查询
+        private boolean isSimpleQuery = false;
 
         @Override
         public boolean visit(SQLSelectQueryBlock queryBlock) {
             // 是否有去重
             if (queryBlock.isDistinct()) {
-                isSimpleSelect = false;
+                isSimpleQuery = false;
                 return false;
             }
             // 是否有分组
             if (!Objects.equals(queryBlock.getGroupBy(), null)) {
-                isSimpleSelect = false;
+                isSimpleQuery = false;
                 return false;
             }
             // 是否有排序
             if (!Objects.equals(queryBlock.getOrderBy(), null)) {
-                isSimpleSelect = false;
+                isSimpleQuery = false;
                 return false;
             }
             if (queryBlock.getClusterBy().size() > 0) {
-                isSimpleSelect = false;
+                isSimpleQuery = false;
                 return false;
             }
             if (queryBlock.getDistributeBy().size() > 0) {
-                isSimpleSelect = false;
+                isSimpleQuery = false;
                 return false;
             }
             if (queryBlock.getSortBy().size() > 0) {
-                isSimpleSelect = false;
+                isSimpleQuery = false;
                 return false;
             }
             // Where 是否为空
             if (Objects.equals(queryBlock.getWhere(), null)) {
-                isSimpleSelect = false;
+                isSimpleQuery = false;
                 return false;
             }
             // 是否有开窗
             if (!Objects.equals(queryBlock.getWindows(), null)) {
-                isSimpleSelect = false;
+                isSimpleQuery = false;
                 return false;
             }
             // 2. 获取 FROM
             SQLTableSource from = queryBlock.getFrom();
             // 是否有JOIN
             if (from instanceof SQLJoinTableSource) {
-                isSimpleSelect = false;
+                isSimpleQuery = false;
                 return false;
             }
             // 是否有子查询
             if (from instanceof SQLSubqueryTableSource) {
-                isSimpleSelect = false;
+                isSimpleQuery = false;
                 return false;
             }
             // 3. 获取 SELECT
@@ -108,24 +112,12 @@ public class ParserQualityRules {
                 SQLExpr expr = item.getExpr();
                 // 是否有聚合函数
                 if (expr instanceof SQLAggregateExpr) {
-                    isSimpleSelect = false;
-                    return false;
-                }
-                // 是否有 SELECT *
-                if (expr instanceof SQLAllColumnExpr) {
-                    isSelectAll = true;
+                    isSimpleQuery = false;
                     return false;
                 }
             }
-            return super.visit(queryBlock);
-        }
-
-        public boolean isSelectAll() {
-            return isSelectAll;
-        }
-
-        public boolean isInsertOverwrite() {
-            return isInsertOverwrite;
+            isSimpleQuery = true;
+            return false;
         }
     }
 
@@ -134,16 +126,25 @@ public class ParserQualityRules {
         HiveStatementParser parser = new HiveStatementParser(sql);
         SQLStatement statement = parser.parseStatement();
         // 访问者模式遍历抽象语法树
-        QualityRuleVisitor visitor = new QualityRuleVisitor();
-        statement.accept(visitor);
 
-        if (visitor.isSelectAll()) {
+        // 规则1：禁止使用 SELECT *
+        SelectAllQualityRuleVisitor selectAllVisitor = new SelectAllQualityRuleVisitor();
+        statement.accept(selectAllVisitor);
+        if (selectAllVisitor.isSelectAll) {
             System.out.println("触发【规则】禁止使用 SELECT *");
         }
-        if (visitor.isInsertOverwrite()) {
+
+        // 规则2：禁止使用 SELECT *
+        InsertIntoSelectQualityRuleVisitor insertIntoVisitor = new InsertIntoSelectQualityRuleVisitor();
+        statement.accept(insertIntoVisitor);
+        if (insertIntoVisitor.isInsertIntoSelect) {
             System.out.println("触发【规则】禁止使用 INSERT INTO SELECT");
         }
-        if (visitor.isSimpleSelect) {
+
+        // 规则3：禁止使用简单查询
+        SimpleQueryQualityRuleVisitor simpleQueryVisitor = new SimpleQueryQualityRuleVisitor();
+        statement.accept(simpleQueryVisitor);
+        if (simpleQueryVisitor.isSimpleQuery) {
             System.out.println("触发【规则】禁止使用简单查询");
         }
     }
@@ -157,18 +158,12 @@ public class ParserQualityRules {
 
     @Test
     public void testInsertValues() {
-        String sql = "INSERT INTO result_table SELECT * FROM source_table";
+        String sql = "INSERT INTO Websites (name, country) VALUES ('百度', 'CN')";
         parseQualityRule(sql);
     }
 
     @Test
     public void testSelectAll() {
-        String sql = "SELECT * FROM user";
-        parseQualityRule(sql);
-    }
-
-    @Test
-    public void testCreateTable() {
         String sql = "SELECT * FROM user";
         parseQualityRule(sql);
     }
@@ -180,8 +175,8 @@ public class ParserQualityRules {
     }
 
     @Test
-    public void testDistinct() {
-        String sql = "SELECT user_name FROM user WHERE user_id = '1'";
+    public void testWhere() {
+        String sql = "SELECT * FROM user WHERE user_id = '1'";
         parseQualityRule(sql);
     }
 }

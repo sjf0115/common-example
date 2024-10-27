@@ -132,6 +132,8 @@ public class ParserQualityRules {
         statement.accept(selectAllVisitor);
         if (selectAllVisitor.isSelectAll) {
             System.out.println("触发【规则】禁止使用 SELECT *");
+        } else {
+            System.out.println("未触发【规则】禁止使用 SELECT *");
         }
 
         // 规则2：禁止使用 SELECT *
@@ -139,6 +141,8 @@ public class ParserQualityRules {
         statement.accept(insertIntoVisitor);
         if (insertIntoVisitor.isInsertIntoSelect) {
             System.out.println("触发【规则】禁止使用 INSERT INTO SELECT");
+        } else {
+            System.out.println("未触发【规则】禁止使用 INSERT INTO SELECT");
         }
 
         // 规则3：禁止使用简单查询
@@ -146,28 +150,57 @@ public class ParserQualityRules {
         statement.accept(simpleQueryVisitor);
         if (simpleQueryVisitor.isSimpleQuery) {
             System.out.println("触发【规则】禁止使用简单查询");
+        } else {
+            System.out.println("未触发【规则】禁止使用简单查询");
         }
     }
 
+    // 规则1测试
+    @Test
+    public void testSelectAll() {
+        // 触发【规则】禁止使用 SELECT *
+        // 触发【规则】禁止使用简单查询
+        String sql = "SELECT * FROM user WHERE user_id = '1' AND desc LIKE '%select *%'";
+        parseQualityRule(sql);
+    }
 
     @Test
+    public void testSelectName() {
+        // 未触发【规则】禁止使用 SELECT *
+        // 触发【规则】禁止使用简单查询
+        String sql = "SELECT user_name FROM user WHERE user_id = '1' AND desc LIKE '%select *%'";
+        parseQualityRule(sql);
+    }
+
+    // 规则2测试
+    @Test
     public void testInsertSelect() {
+        // 触发【规则】禁止使用 SELECT *
+        // 触发【规则】禁止使用 INSERT INTO SELECT
+        // 未触发【规则】禁止使用简单查询
         String sql = "INSERT INTO result_table SELECT * FROM source_table";
         parseQualityRule(sql);
     }
 
     @Test
     public void testInsertValues() {
+        // 未触发【规则】禁止使用 SELECT *
+        // 未触发【规则】禁止使用 INSERT INTO SELECT
+        // 未触发【规则】禁止使用简单查询
         String sql = "INSERT INTO Websites (name, country) VALUES ('百度', 'CN')";
         parseQualityRule(sql);
     }
 
     @Test
-    public void testSelectAll() {
-        String sql = "SELECT * FROM user";
+    public void testInsertOverwrite() {
+        // 未触发【规则】禁止使用 SELECT *
+        // 未触发【规则】禁止使用 INSERT INTO SELECT
+        // 未触发【规则】禁止使用简单查询
+        String sql = "INSERT OVERWRITE Websites (name, country) VALUES ('百度', 'CN')";
         parseQualityRule(sql);
     }
 
+    // 规则3测试
     @Test
     public void testAggregateFunction() {
         String sql = "SELECT COUNT(*) FROM user";

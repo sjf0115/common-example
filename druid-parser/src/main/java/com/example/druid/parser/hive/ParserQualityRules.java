@@ -26,10 +26,24 @@ public class ParserQualityRules {
     public class SelectAllQualityRuleVisitor extends HiveSchemaStatVisitor {
         // 是否是 SELECT *
         private boolean isSelectAll = false;
+//        @Override
+//        public boolean visit(SQLAllColumnExpr expr) {
+//            // 是否有 SELECT *
+//            isSelectAll = true;
+//            return false;
+//        }
+
         @Override
-        public boolean visit(SQLAllColumnExpr expr) {
+        public boolean visit(SQLSelectQueryBlock queryBlock) {
             // 是否有 SELECT *
-            isSelectAll = true;
+            List<SQLSelectItem> selectList = queryBlock.getSelectList();
+            for (SQLSelectItem selectItem : selectList) {
+                SQLExpr expr = selectItem.getExpr();
+                if (expr instanceof SQLAllColumnExpr) {
+                    isSelectAll = true;
+                    return false;
+                }
+            }
             return false;
         }
     }
@@ -54,6 +68,13 @@ public class ParserQualityRules {
     public class SimpleQueryQualityRuleVisitor extends HiveSchemaStatVisitor {
         // 是否是简单查询
         private boolean isSimpleQuery = false;
+
+        @Override
+        public boolean visit(SQLUnionQuery query) {
+            // 是否有 UNION 查询
+            isSimpleQuery = false;
+            return false;
+        }
 
         @Override
         public boolean visit(SQLSelectQueryBlock queryBlock) {
@@ -159,6 +180,7 @@ public class ParserQualityRules {
     @Test
     public void testSelectAll() {
         // 触发【规则】禁止使用 SELECT *
+        // 未触发【规则】禁止使用 INSERT INTO SELECT
         // 触发【规则】禁止使用简单查询
         String sql = "SELECT * FROM user WHERE user_id = '1' AND desc LIKE '%select *%'";
         parseQualityRule(sql);
@@ -167,8 +189,18 @@ public class ParserQualityRules {
     @Test
     public void testSelectName() {
         // 未触发【规则】禁止使用 SELECT *
+        // 未触发【规则】禁止使用 INSERT INTO SELECT
         // 触发【规则】禁止使用简单查询
         String sql = "SELECT user_name FROM user WHERE user_id = '1' AND desc LIKE '%select *%'";
+        parseQualityRule(sql);
+    }
+
+    @Test
+    public void testSelectAggregate() {
+        // 未触发【规则】禁止使用 SELECT *
+        // 未触发【规则】禁止使用 INSERT INTO SELECT
+        // 未触发【规则】禁止使用简单查询
+        String sql = "SELECT COUNT(*) FROM user";
         parseQualityRule(sql);
     }
 
@@ -202,14 +234,68 @@ public class ParserQualityRules {
 
     // 规则3测试
     @Test
+    public void testWhere() {
+        // 触发【规则】禁止使用 SELECT *
+        // 未触发【规则】禁止使用 INSERT INTO SELECT
+        // 触发【规则】禁止使用简单查询
+        String sql = "SELECT * FROM user WHERE user_ud = '1'";
+        parseQualityRule(sql);
+    }
+
+    @Test
+    public void testUnion() {
+        // 触发【规则】禁止使用 SELECT *
+        // 未触发【规则】禁止使用 INSERT INTO SELECT
+        // 未触发【规则】禁止使用简单查询
+        String sql = "SELECT * FROM user WHERE user_id = '1' UNION ALL SELECT * FROM user WHERE user_id = '2'";
+        parseQualityRule(sql);
+    }
+
+    @Test
+    public void testGroupBy() {
+        // 未触发【规则】禁止使用 SELECT *
+        // 未触发【规则】禁止使用 INSERT INTO SELECT
+        // 未触发【规则】禁止使用简单查询
+        String sql = "SELECT gender, COUNT(*) AS uv FROM user GroupBy gender";
+        parseQualityRule(sql);
+    }
+
+    @Test
+    public void testOrderBy() {
+        // 未触发【规则】禁止使用 SELECT *
+        // 未触发【规则】禁止使用 INSERT INTO SELECT
+        // 未触发【规则】禁止使用简单查询
+        String sql = "SELECT user_id, age FROM user OrderBy age";
+        parseQualityRule(sql);
+    }
+
+    @Test
+    public void testSubQuery() {
+        // 未触发【规则】禁止使用 SELECT *
+        // 未触发【规则】禁止使用 INSERT INTO SELECT
+        // 未触发【规则】禁止使用简单查询
+        String sql = "SELECT id, name\n" +
+                "FROM (\n" +
+                "  SELECT id, name FROM user\n" +
+                ") AS a";
+        parseQualityRule(sql);
+    }
+
+    @Test
     public void testAggregateFunction() {
+        // 未触发【规则】禁止使用 SELECT *
+        // 未触发【规则】禁止使用 INSERT INTO SELECT
+        // 未触发【规则】禁止使用简单查询
         String sql = "SELECT COUNT(*) FROM user";
         parseQualityRule(sql);
     }
 
     @Test
-    public void testWhere() {
-        String sql = "SELECT * FROM user WHERE user_id = '1'";
+    public void testWindow() {
+        // 未触发【规则】禁止使用 SELECT *
+        // 未触发【规则】禁止使用 INSERT INTO SELECT
+        // 未触发【规则】禁止使用简单查询
+        String sql = "SELECT user_id, ROW_NUMBER() OVER(PARTITION BY class_id ORDER BY score DESC) AS rank FROM user";
         parseQualityRule(sql);
     }
 }

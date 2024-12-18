@@ -17,6 +17,7 @@
         <module>bsi</module>
         <module>druid-parser</module>
         <module>design-pattern</module>
+        <module>javacc</module>
     </modules>
 
     <properties>
@@ -183,6 +184,7 @@
                 <version>${junit.version}</version>
                 <scope>test</scope>
             </dependency>
+
         </dependencies>
     </dependencyManagement>
 </project>

@@ -7,13 +7,13 @@ import java.sql.PreparedStatement;
 import java.sql.SQLException;
 
 /**
- * 功能：Jdbc Batch Insert rewriteBatchedStatements 示例 使用 MySQL 演示
+ * 功能：Jdbc Batch Insert 添加 rewriteBatchedStatements 使用 MySQL 演示
  * 作者：SmartSi
  * CSDN博客：https://smartsi.blog.csdn.net/
  * 公众号：大数据生态
  * 日期：2023/6/8 上午7:52
  */
-public class JdbcInsertRewriteBatchExample {
+public class JdbcBatchInsertRewriteBatchExample {
 
     private static final String URL = "jdbc:mysql://localhost:3306/test?rewriteBatchedStatements=true&useSSL=false&characterEncoding=utf8";
 

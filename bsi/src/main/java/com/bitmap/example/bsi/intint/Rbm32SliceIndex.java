@@ -9,35 +9,36 @@ import java.io.DataInput;
 import java.io.DataOutput;
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.util.List;
-import java.util.Objects;
+import java.util.Collection;
 import java.util.stream.IntStream;
 
 /**
- * 功能：Rbm32SliceIndex  Decimal
+ * 功能：Rbm32SliceIndex Base 2
+ *         每一个切片对应一个 RoaringBitmap
  * 作者：SmartSi
  * CSDN博客：https://smartsi.blog.csdn.net/
  * 公众号：大数据生态
  * 日期：2024/6/16 00:52
  */
-public class Rbm32SliceIndex implements Bitmap32SliceIndex {
-    private int maxValue;
-    private int minValue;
-    private RoaringBitmap[] rbm;
+public class Rbm32SliceIndex implements BitmapSliceIndex {
+    private int maxValue = -1;
+    private int minValue = -1;
+    private int sliceSize = 0;
+    private RoaringBitmap[] slices;
     private RoaringBitmap ebm;
     private Boolean runOptimized = false;
 
     // 构造器
     public Rbm32SliceIndex(int minValue, int maxValue) {
         if (minValue < 0) {
-            throw new IllegalArgumentException("Values should be non-negative");
+            throw new IllegalArgumentException("Value should be non-negative");
         }
-
-        this.rbm = new RoaringBitmap[32 - Integer.numberOfLeadingZeros(maxValue)];
-        for (int i = 0; i < rbm.length; i++) {
-            this.rbm[i] = new RoaringBitmap();
+        // 索引切片个数等于最大整数二进制位数，即32减去最大整数二进制填充0个数
+        sliceSize = 32 - Integer.numberOfLeadingZeros(maxValue);
+        this.slices = new RoaringBitmap[sliceSize];
+        for (int i = 0; i < slices.length; i++) {
+            this.slices[i] = new RoaringBitmap();
         }
-
         this.ebm = new RoaringBitmap();
     }
 
@@ -45,76 +46,158 @@ public class Rbm32SliceIndex implements Bitmap32SliceIndex {
         this(0, 0);
     }
 
-    // 切片个数-最大值二进制位数
+    /**
+     * 切片个数
+     *      最大值二进制位数
+     * @return
+     */
     @Override
-    public int bitCount() {
-        return this.rbm.length;
+    public int sliceSize() {
+        return sliceSize;
     }
 
-    // 基数
+    /**
+     * 基数基数
+     * @return
+     */
     @Override
     public long getLongCardinality() {
         return this.ebm.getLongCardinality();
     }
 
-    // 设置 index 的 value 值
+    /**
+     * 如果 BSI 不包含 key-value 映射，返回 true
+     */
     @Override
-    public void setValue(int index, int value) {
-        ensureCapacityInternal(value, value);
-        setValueInternal(index, value);
+    public boolean isEmpty() {
+        return this.getLongCardinality() == 0;
     }
 
-    // 批量设置 index 的 value 值
+    /**
+     * 从 BSI 中删除所有的映射，BSI 变空
+     */
+    public void clear() {
+        this.maxValue = -1;
+        this.minValue = -1;
+        this.ebm = new RoaringBitmap();
+        this.slices = null;
+        this.sliceSize = 0;
+    }
+
+    /**
+     * 指定的 key 是否关联指定的 value
+     * @param key
+     * @return
+     */
+    public boolean containsKey(int key) {
+        return this.ebm.contains(key);
+    }
+
+    /**
+     * 指定的 value 是否关联指定的 key
+     * @param value
+     * @return
+     */
+    public boolean containsValue(int value) {
+        return false;
+    }
+
+    /**
+     * 为指定的 Key 关联指定的 Value
+     * @param key
+     * @param value
+     */
     @Override
-    public void setValues(List<Pair<Integer, Integer>> values) {
-        int maxValue = values.stream().mapToInt(Pair::getRight).filter(Objects::nonNull).max().getAsInt();
-        int minValue = values.stream().mapToInt(Pair::getRight).filter(Objects::nonNull).min().getAsInt();
-        ensureCapacityInternal(minValue, maxValue);
-        for (Pair<Integer, Integer> pair : values) {
-            setValueInternal(pair.getKey(), pair.getValue());
+    public void put(int key, int value) {
+        // 更新最大值和最小值
+        if (this.isEmpty()) {
+            this.minValue = value;
+            this.maxValue = value;
+        } else if (this.minValue > value) {
+            this.minValue = value;
+        } else if (this.maxValue < value) {
+            this.maxValue = value;
         }
+        // 调整切片个数
+        int newSliceSize = Integer.toBinaryString(value).length();
+        resize(newSliceSize);
+        // 为指定 Key 关联指定 Value
+        putValueInternal(key, value);
     }
 
-    // 计算 index 对应的值 value
     @Override
-    public int getValue(int index) {
-        boolean exists = this.ebm.contains(index);
-        if (!exists) {
-            return -1;
-        }
-        return valueAt(index);
-    }
-
-    // 是否存在指定的 index
-    @Override
-    public boolean valueExist(int index) {
-        return this.ebm.contains(index);
-    }
-
-    public void add(Rbm32SliceIndex otherBsi) {
-        if (null == otherBsi || otherBsi.ebm.isEmpty()) {
+    public void putAll(BitmapSliceIndex otherBsi) {
+        if (null == otherBsi || otherBsi.isEmpty()) {
             return;
         }
 
         this.ebm.or(otherBsi.ebm);
-        if (otherBsi.bitCount() > this.bitCount()) {
-            grow(otherBsi.bitCount());
+        if (otherBsi.sliceSize() > this.sliceSize()) {
+            resize(otherBsi.sliceSize());
         }
 
-        for (int i = 0; i < otherBsi.bitCount(); i++) {
-            this.addDigit(otherBsi.rbm[i], i);
+        for (int i = 0; i < otherBsi.sliceSize(); i++) {
+            this.addDigit(otherBsi.slices[i], i);
         }
 
         this.minValue = minValue();
         this.maxValue = maxValue();
     }
 
+    /**
+     * 获取 key 对应的 value
+     * @param key
+     * @return
+     */
+    @Override
+    public int get(int key) {
+        if (!this.containsKey(key)) {
+            return -1;
+        }
+        return getValueInternal(key);
+    }
+
+    @Override
+    public int remove(int key) {
+        return 0;
+    }
+
+    @Override
+    public boolean remove(int key, int value) {
+        return false;
+    }
+
+    @Override
+    public Collection<Integer> keys() {
+        return null;
+    }
+
+    @Override
+    public Collection<Integer> values() {
+        return null;
+    }
+
+    @Override
+    public int replace(int key, int value) {
+        return 0;
+    }
+
+    @Override
+    public int replace(int key, int oldValue, int newValue) {
+        return 0;
+    }
+
+
+    public void add(Rbm32SliceIndex otherBsi) {
+
+    }
+
     private void addDigit(RoaringBitmap foundSet, int i) {
-        RoaringBitmap carry = RoaringBitmap.and(this.rbm[i], foundSet);
-        this.rbm[i].xor(foundSet);
+        RoaringBitmap carry = RoaringBitmap.and(this.slices[i], foundSet);
+        this.slices[i].xor(foundSet);
         if (!carry.isEmpty()) {
-            if (i + 1 >= this.bitCount()) {
-                grow(this.bitCount() + 1);
+            if (i + 1 >= this.sliceSize()) {
+                resize(this.sliceSize + 1);
             }
             this.addDigit(carry, i + 1);
         }
@@ -127,14 +210,14 @@ public class Rbm32SliceIndex implements Bitmap32SliceIndex {
         }
 
         RoaringBitmap minValuesId = ebm;
-        for (int i = rbm.length - 1; i >= 0; i -= 1) {
-            RoaringBitmap tmp = RoaringBitmap.andNot(minValuesId, rbm[i]);
+        for (int i = slices.length - 1; i >= 0; i -= 1) {
+            RoaringBitmap tmp = RoaringBitmap.andNot(minValuesId, slices[i]);
             if (!tmp.isEmpty()) {
                 minValuesId = tmp;
             }
         }
 
-        return valueAt(minValuesId.first());
+        return getValueInternal(minValuesId.first());
     }
 
     private int maxValue() {
@@ -143,29 +226,22 @@ public class Rbm32SliceIndex implements Bitmap32SliceIndex {
         }
 
         RoaringBitmap maxValuesId = ebm;
-        for (int i = rbm.length - 1; i >= 0; i -= 1) {
-            RoaringBitmap tmp = RoaringBitmap.and(maxValuesId, rbm[i]);
+        for (int i = slices.length - 1; i >= 0; i -= 1) {
+            RoaringBitmap tmp = RoaringBitmap.and(maxValuesId, slices[i]);
             if (!tmp.isEmpty()) {
                 maxValuesId = tmp;
             }
         }
 
-        return valueAt(maxValuesId.first());
+        return getValueInternal(maxValuesId.first());
     }
 
 
-
-    private void clear() {
-        this.maxValue = 0;
-        this.minValue = 0;
-        this.ebm = null;
-        this.rbm = null;
-    }
 
     public void runOptimize() {
         this.ebm.runOptimize();
 
-        for (RoaringBitmap integers : this.rbm) {
+        for (RoaringBitmap integers : this.slices) {
             integers.runOptimize();
         }
         this.runOptimized = true;
@@ -186,8 +262,8 @@ public class Rbm32SliceIndex implements Bitmap32SliceIndex {
         this.ebm.serialize(output);
 
         // write ba
-        WritableUtils.writeVInt(output, this.rbm.length);
-        for (RoaringBitmap rb : this.rbm) {
+        WritableUtils.writeVInt(output, this.slices.length);
+        for (RoaringBitmap rb : this.slices) {
             rb.serialize(output);
         }
     }
@@ -214,7 +290,7 @@ public class Rbm32SliceIndex implements Bitmap32SliceIndex {
             rb.deserialize(in);
             ba[i] = rb;
         }
-        this.rbm = ba;
+        this.slices = ba;
     }
 
     @Override
@@ -227,8 +303,8 @@ public class Rbm32SliceIndex implements Bitmap32SliceIndex {
         this.ebm.serialize(buffer);
 
         // write ba
-        buffer.putInt(this.rbm.length);
-        for (RoaringBitmap rb : this.rbm) {
+        buffer.putInt(this.slices.length);
+        for (RoaringBitmap rb : this.slices) {
             rb.serialize(buffer);
         }
 
@@ -256,13 +332,13 @@ public class Rbm32SliceIndex implements Bitmap32SliceIndex {
             ba[i] = rb;
             buffer.position(buffer.position() + rb.serializedSizeInBytes());
         }
-        this.rbm = ba;
+        this.slices = ba;
     }
 
     @Override
     public int serializedSizeInBytes() {
         int size = 0;
-        for (RoaringBitmap rb : this.rbm) {
+        for (RoaringBitmap rb : this.slices) {
             size += rb.serializedSizeInBytes();
         }
         return 4 + 4 + 1 + 4 + this.ebm.serializedSizeInBytes() + size;
@@ -279,17 +355,17 @@ public class Rbm32SliceIndex implements Bitmap32SliceIndex {
             throw new IllegalArgumentException("merge can be used only in bsiA  bsiB  is null");
         }
 
-        int bitDepth = Integer.max(this.bitCount(), otherBsi.bitCount());
+        int bitDepth = Integer.max(this.sliceSize(), otherBsi.sliceSize());
         RoaringBitmap[] newBA = new RoaringBitmap[bitDepth];
         for (int i = 0; i < bitDepth; i++) {
-            RoaringBitmap current = i < this.rbm.length ? this.rbm[i] : new RoaringBitmap();
-            RoaringBitmap other = i < otherBsi.rbm.length ? otherBsi.rbm[i] : new RoaringBitmap();
+            RoaringBitmap current = i < this.slices.length ? this.slices[i] : new RoaringBitmap();
+            RoaringBitmap other = i < otherBsi.slices.length ? otherBsi.slices[i] : new RoaringBitmap();
             newBA[i] = RoaringBitmap.or(current, other);
             if (this.runOptimized || otherBsi.runOptimized) {
                 newBA[i].runOptimize();
             }
         }
-        this.rbm = newBA;
+        this.slices = newBA;
         this.ebm.or(otherBsi.ebm);
         this.runOptimized = this.runOptimized || otherBsi.runOptimized;
         this.maxValue = Integer.max(this.maxValue, otherBsi.maxValue);
@@ -301,11 +377,11 @@ public class Rbm32SliceIndex implements Bitmap32SliceIndex {
         bitSliceIndex.minValue = this.minValue;
         bitSliceIndex.maxValue = this.maxValue;
         bitSliceIndex.ebm = this.ebm.clone();
-        RoaringBitmap[] cloneBA = new RoaringBitmap[this.bitCount()];
+        RoaringBitmap[] cloneBA = new RoaringBitmap[this.sliceSize()];
         for (int i = 0; i < cloneBA.length; i++) {
-            cloneBA[i] = this.rbm[i].clone();
+            cloneBA[i] = this.slices[i].clone();
         }
-        bitSliceIndex.rbm = cloneBA;
+        bitSliceIndex.slices = cloneBA;
         bitSliceIndex.runOptimized = this.runOptimized;
 
         return bitSliceIndex;
@@ -384,8 +460,8 @@ public class Rbm32SliceIndex implements Bitmap32SliceIndex {
         }
         long count = foundSet.getLongCardinality();
 
-        Long sum = IntStream.range(0, this.bitCount())
-                .mapToLong(x -> (long) (1 << x) * RoaringBitmap.andCardinality(this.rbm[x], foundSet))
+        Long sum = IntStream.range(0, this.sliceSize())
+                .mapToLong(x -> (long) (1 << x) * RoaringBitmap.andCardinality(this.slices[x], foundSet))
                 .sum();
 
         return Pair.newPair(sum, count);
@@ -393,61 +469,56 @@ public class Rbm32SliceIndex implements Bitmap32SliceIndex {
 
     //------------------------------------------------------------------------------------------
 
-    // 切片空间
-    private void ensureCapacityInternal(int minValue, int maxValue) {
-        if (ebm.isEmpty()) {
-            this.minValue = minValue;
-            this.maxValue = maxValue;
-            grow(Integer.toBinaryString(maxValue).length());
-        } else if (this.minValue > minValue) {
-            this.minValue = minValue;
-        } else if (this.maxValue < maxValue) {
-            this.maxValue = maxValue;
-            grow(Integer.toBinaryString(maxValue).length());
-        }
-    }
-
-    // 增加切片空看-增加Bitmap个数
-    private void grow(int newBitNum) {
-        int bitNum = this.rbm.length;
-
-        if (bitNum >= newBitNum) {
+    /**
+     * 调整切片个数
+     */
+    private void resize(int newSliceSize) {
+        if (newSliceSize <= this.sliceSize) {
+            // 小于等于之前切片个数不需要调整
             return;
         }
-
-        // 拷贝
-        RoaringBitmap[] newRbm = new RoaringBitmap[newBitNum];
-        if (bitNum != 0) {
-            System.arraycopy(this.rbm, 0, newRbm, 0, bitNum);
+        RoaringBitmap[] newSlices = new RoaringBitmap[newSliceSize];
+        // 复制旧切片
+        if (this.sliceSize != 0) {
+            System.arraycopy(this.slices, 0, newSlices, 0, this.sliceSize);
         }
-
-        for (int i = newBitNum - 1; i >= bitNum; i--) {
-            newRbm[i] = new RoaringBitmap();
+        // 增加新切片
+        for (int i = newSliceSize - 1; i >= this.sliceSize; i--) {
+            newSlices[i] = new RoaringBitmap();
             if (this.runOptimized) {
-                newRbm[i].runOptimize();
+                newSlices[i].runOptimize();
             }
         }
-        this.rbm = newRbm;
+        this.slices = newSlices;
+        this.sliceSize = newSliceSize;
     }
 
-    // 设置值
-    private void setValueInternal(int index, int value) {
-        // 为 value 的每个切片 bitmap 添加 index
-        for (int i = 0; i < this.bitCount(); i += 1) {
+    /**
+     * 设置值
+     * @param key
+     * @param value
+     */
+    private void putValueInternal(int key, int value) {
+        // 为 value 的每个切片 bitmap 添加 x
+        for (int i = 0; i < this.sliceSize(); i += 1) {
             if ((value & (1 << i)) > 0) {
-                this.rbm[i].add(index);
+                this.slices[i].add(key);
             } else {
-                this.rbm[i].remove(index);
+                this.slices[i].remove(key);
             }
         }
-        this.ebm.add(index);
+        this.ebm.add(key);
     }
 
-    // 计算 index 的 value 值
-    private int valueAt(int index) {
+    /**
+     * 获取指定 Key 关联的 value
+     * @param key
+     * @return
+     */
+    private int getValueInternal(int key) {
         int value = 0;
-        for (int i = 0; i < this.bitCount(); i += 1) {
-            if (this.rbm[i].contains(index)) {
+        for (int i = 0; i < this.sliceSize(); i += 1) {
+            if (this.slices[i].contains(key)) {
                 value |= (1 << i);
             }
         }
@@ -460,14 +531,14 @@ public class Rbm32SliceIndex implements Bitmap32SliceIndex {
         RoaringBitmap LT = new RoaringBitmap();
         RoaringBitmap EQ = this.ebm;
 
-        for (int i = this.bitCount() - 1; i >= 0; i--) {
+        for (int i = this.sliceSize() - 1; i >= 0; i--) {
             int bit = (value >> i) & 1;
             if (bit == 1) {
-                LT = RoaringBitmap.or(LT, RoaringBitmap.andNot(EQ, this.rbm[i]));
-                EQ = RoaringBitmap.and(EQ, this.rbm[i]);
+                LT = RoaringBitmap.or(LT, RoaringBitmap.andNot(EQ, this.slices[i]));
+                EQ = RoaringBitmap.and(EQ, this.slices[i]);
             } else {
-                GT = RoaringBitmap.or(GT, RoaringBitmap.and(EQ, this.rbm[i]));
-                EQ = RoaringBitmap.andNot(EQ, this.rbm[i]);
+                GT = RoaringBitmap.or(GT, RoaringBitmap.and(EQ, this.slices[i]));
+                EQ = RoaringBitmap.andNot(EQ, this.slices[i]);
             }
         }
 

@@ -6,20 +6,12 @@ import org.junit.jupiter.api.*;
 import org.roaringbitmap.RoaringBitmap;
 
 import java.io.*;
-import java.nio.ByteBuffer;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
-/**
- * RBBsiTest
- * created by haihuang@alibaba-inc.com on 2021/6/6
- */
 public class Rbm32SliceIndexTest {
     private Map<Integer, Integer> testDataSet = new HashMap<>();
-
     private Rbm32SliceIndex bsi;
 
     @BeforeEach
@@ -27,14 +19,14 @@ public class Rbm32SliceIndexTest {
         IntStream.range(1, 100).forEach(x -> testDataSet.put(x, x));
         bsi = new Rbm32SliceIndex(1, 99);
         testDataSet.forEach((k, v) -> {
-            bsi.setValue(k, v);
+            bsi.put(k, v);
         });
     }
 
     @Test
     public void testSetAndGet() {
         IntStream.range(1, 100).forEach(x -> {
-            int value = bsi.getValue(x);
+            int value = bsi.get(x);
             Assertions.assertTrue(value == x);
         });
     }
@@ -78,14 +70,14 @@ public class Rbm32SliceIndexTest {
     @Test
     public void testAdd() {
         Rbm32SliceIndex bsiA = new Rbm32SliceIndex();
-        IntStream.range(1, 100).forEach(x -> bsiA.setValue(x, x));
+        IntStream.range(1, 100).forEach(x -> bsiA.put(x, x));
         Rbm32SliceIndex bsiB = new Rbm32SliceIndex();
-        IntStream.range(1, 120).forEach(x -> bsiB.setValue(x, x));
+        IntStream.range(1, 120).forEach(x -> bsiB.put(x, x));
 
         bsiA.add(bsiB);
 
         IntStream.range(1, 120).forEach(x -> {
-            int value = bsiA.getValue(x);
+            int value = bsiA.get(x);
             if (x < 100) {
                 Assertions.assertEquals(value, x * 2);
             } else {
@@ -98,9 +90,9 @@ public class Rbm32SliceIndexTest {
     @Test
     public void testAddAndEvaluate() {
         Rbm32SliceIndex bsiA = new Rbm32SliceIndex();
-        IntStream.range(1, 100).forEach(x -> bsiA.setValue(x, x));
+        IntStream.range(1, 100).forEach(x -> bsiA.put(x, x));
         Rbm32SliceIndex bsiB = new Rbm32SliceIndex();
-        IntStream.range(1, 120).forEach(x -> bsiB.setValue(120 - x, x));
+        IntStream.range(1, 120).forEach(x -> bsiB.put(120 - x, x));
 
         bsiA.add(bsiB);
 
@@ -161,10 +153,10 @@ public class Rbm32SliceIndexTest {
     @Test
     public void testIOFromExternal() {
         Rbm32SliceIndex bsi = new Rbm32SliceIndex(1, 99);
-        IntStream.range(1, 100).forEach(x -> bsi.setValue(x, x));
+        IntStream.range(1, 100).forEach(x -> bsi.put(x, x));
 
         IntStream.range(1, 100).forEach(x -> {
-            int value = bsi.getValue(x);
+            int value = bsi.get(x);
             Assertions.assertEquals(value, x);
         });
     }
@@ -175,9 +167,9 @@ public class Rbm32SliceIndexTest {
         Rbm32SliceIndex bsi = new Rbm32SliceIndex(1, 99);
         IntStream.range(1, 100).forEach(x -> {
             if (x <= 50) {
-                bsi.setValue(x, 1);
+                bsi.put(x, 1);
             } else {
-                bsi.setValue(x, x);
+                bsi.put(x, x);
             }
 
         });
@@ -190,9 +182,9 @@ public class Rbm32SliceIndexTest {
     @Test
     public void testNotEQ() {
         bsi = new Rbm32SliceIndex();
-        bsi.setValue(1, 99);
-        bsi.setValue(2, 1);
-        bsi.setValue(3, 50);
+        bsi.put(1, 99);
+        bsi.put(2, 1);
+        bsi.put(3, 50);
 
         RoaringBitmap result = bsi.compare(Operation.NEQ, 99);
         Assertions.assertTrue(result.getLongCardinality() == 2);
@@ -203,9 +195,9 @@ public class Rbm32SliceIndexTest {
         Assertions.assertArrayEquals(new int[]{1, 2, 3}, result.toArray());
 
         bsi = new Rbm32SliceIndex();
-        bsi.setValue(1, 99);
-        bsi.setValue(2, 99);
-        bsi.setValue(3, 99);
+        bsi.put(1, 99);
+        bsi.put(2, 99);
+        bsi.put(3, 99);
 
         result = bsi.compare(Operation.NEQ, 99);
         Assertions.assertTrue(result.isEmpty());
@@ -293,7 +285,7 @@ public class Rbm32SliceIndexTest {
     @Test
     public void testSum() {
         Rbm32SliceIndex bsi = new Rbm32SliceIndex(1, 99);
-        IntStream.range(1, 100).forEach(x -> bsi.setValue(x, x));
+        IntStream.range(1, 100).forEach(x -> bsi.put(x, x));
 
         RoaringBitmap foundSet = RoaringBitmap.bitmapOf(IntStream.range(1, 51).toArray());
 
@@ -310,9 +302,9 @@ public class Rbm32SliceIndexTest {
     @Test
     public void testValueZero() {
         bsi = new Rbm32SliceIndex();
-        bsi.setValue(0, 0);
-        bsi.setValue(1, 0);
-        bsi.setValue(2, 1);
+        bsi.put(0, 0);
+        bsi.put(1, 0);
+        bsi.put(2, 1);
 
         RoaringBitmap result = bsi.compare(Operation.EQ, 0);
         Assertions.assertTrue(result.getLongCardinality() == 2);

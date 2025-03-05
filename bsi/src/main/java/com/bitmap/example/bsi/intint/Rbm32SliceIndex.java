@@ -20,7 +20,7 @@ import java.util.stream.IntStream;
  * 公众号：大数据生态
  * 日期：2024/6/16 00:52
  */
-public class Rbm32SliceIndex implements BitmapSliceIndex {
+public class Rbm32SliceIndex implements BitSliceIndex {
     private int maxValue = -1;
     private int minValue = -1;
     private int sliceSize = 0;
@@ -126,7 +126,7 @@ public class Rbm32SliceIndex implements BitmapSliceIndex {
     }
 
     @Override
-    public void putAll(BitmapSliceIndex otherBsi) {
+    public void putAll(BitSliceIndex otherBsi) {
         if (null == otherBsi || otherBsi.isEmpty()) {
             return;
         }
@@ -137,7 +137,7 @@ public class Rbm32SliceIndex implements BitmapSliceIndex {
         }
 
         for (int i = 0; i < otherBsi.sliceSize(); i++) {
-            this.addDigit(otherBsi.slices[i], i);
+            addDigit(otherBsi.slices[i], i);
         }
 
         this.minValue = minValue();
@@ -145,7 +145,7 @@ public class Rbm32SliceIndex implements BitmapSliceIndex {
     }
 
     /**
-     * 获取 key 对应的 value
+     * 获取指定 key 关联的 value
      * @param key
      * @return
      */
@@ -157,6 +157,11 @@ public class Rbm32SliceIndex implements BitmapSliceIndex {
         return getValueInternal(key);
     }
 
+    /**
+     * 删除指定 key 关联的 value
+     * @param key
+     * @return
+     */
     @Override
     public int remove(int key) {
         return 0;
@@ -187,9 +192,84 @@ public class Rbm32SliceIndex implements BitmapSliceIndex {
         return 0;
     }
 
+    @Override
+    public RoaringBitmap compare(Operation operation, int value) {
+        RoaringBitmap empty = new RoaringBitmap();
+        switch (operation) {
+            case EQ:
+                if (minValue == maxValue && minValue == value) {
+                    return this.ebm;
+                } else if (value < minValue || value > maxValue) {
+                    return empty;
+                }
+                return oNeilCompare(Operation.EQ, value);
+            case NEQ:
+                if (minValue == maxValue) {
+                    return minValue == value ? empty : this.ebm;
+                }
+                return oNeilCompare(Operation.NEQ, value);
+            case GE:
+                if (value <= minValue) {
+                    return this.ebm;
+                } else if (value > maxValue) {
+                    return empty;
+                }
+                return oNeilCompare(Operation.GE, value);
+            case GT: {
+                if (value < minValue) {
+                    return this.ebm;
+                } else if (value >= maxValue) {
+                    return empty;
+                }
+                return oNeilCompare(Operation.GT, value);
+            }
+            case LT:
+                if (value > maxValue) {
+                    return this.ebm;
+                } else if (value <= minValue) {
+                    return empty;
+                }
+                return oNeilCompare(Operation.LT, value);
+            case LE:
+                if (value >= maxValue) {
+                    return this.ebm;
+                } else if (value < minValue) {
+                    return empty;
+                }
+                return oNeilCompare(Operation.LE, value);
+            case RANGE:
 
-    public void add(Rbm32SliceIndex otherBsi) {
+            default:
+                throw new IllegalArgumentException("not support operation!");
+        }
+    }
 
+    @Override
+    public RoaringBitmap compareRange(int start, int end) {
+        if (start <= minValue && end >= maxValue) {
+            // 查询范围包含[minValue, maxValue] 返回全部用户
+            return this.ebm;
+        } else if (start > maxValue || end < minValue) {
+            // 查询不在[minValue, maxValue]范围内 返回空
+            return new RoaringBitmap();
+        }
+
+        RoaringBitmap geStart = oNeilCompare(Operation.GE, start);
+        RoaringBitmap leEnd = oNeilCompare(Operation.LE, end);
+        return RoaringBitmap.and(geStart, leEnd);
+    }
+
+    public Pair<Long, Long> sum(RoaringBitmap foundSet) {
+        if (null == foundSet || foundSet.isEmpty()) {
+            return Pair.newPair(0L, 0L);
+        }
+        long count = foundSet.getLongCardinality();
+
+        Long sum = IntStream.range(0, this.sliceSize())
+                .mapToLong(x -> (long) (1 << x) * RoaringBitmap.andCardinality(this.slices[x], foundSet))
+                .sum();
+
+        return Pair.newPair(sum, count);
     }
 
     private void addDigit(RoaringBitmap foundSet, int i) {
@@ -387,85 +467,7 @@ public class Rbm32SliceIndex implements BitmapSliceIndex {
         return bitSliceIndex;
     }
 
-    @Override
-    public RoaringBitmap compare(Operation operation, int value) {
-        RoaringBitmap empty = new RoaringBitmap();
-        switch (operation) {
-            case EQ:
-                if (minValue == maxValue && minValue == value) {
-                    return this.ebm;
-                } else if (value < minValue || value > maxValue) {
-                    return empty;
-                }
-                return oNeilCompare(Operation.EQ, value);
-            case NEQ:
-                if (minValue == maxValue) {
-                    return minValue == value ? empty : this.ebm;
-                }
-                return oNeilCompare(Operation.NEQ, value);
-            case GE:
-                if (value <= minValue) {
-                    return this.ebm;
-                } else if (value > maxValue) {
-                    return empty;
-                }
-                return oNeilCompare(Operation.GE, value);
-            case GT: {
-                if (value < minValue) {
-                    return this.ebm;
-                } else if (value >= maxValue) {
-                    return empty;
-                }
-                return oNeilCompare(Operation.GT, value);
-            }
-            case LT:
-                if (value > maxValue) {
-                    return this.ebm;
-                } else if (value <= minValue) {
-                    return empty;
-                }
-                return oNeilCompare(Operation.LT, value);
-            case LE:
-                if (value >= maxValue) {
-                    return this.ebm;
-                } else if (value < minValue) {
-                    return empty;
-                }
-                return oNeilCompare(Operation.LE, value);
-            case RANGE:
 
-            default:
-                throw new IllegalArgumentException("not support operation!");
-        }
-    }
-
-    @Override
-    public RoaringBitmap compareRange(int start, int end) {
-        if (start <= minValue && end >= maxValue) {
-            // 查询范围包含[minValue, maxValue] 返回全部用户
-            return this.ebm;
-        } else if (start > maxValue || end < minValue) {
-            // 查询不在[minValue, maxValue]范围内 返回空
-            return new RoaringBitmap();
-        }
-
-        RoaringBitmap geStart = oNeilCompare(Operation.GE, start);
-        RoaringBitmap leEnd = oNeilCompare(Operation.LE, end);
-        return RoaringBitmap.and(geStart, leEnd);
-    }
-
-    public Pair<Long, Long> sum(RoaringBitmap foundSet) {
-        if (null == foundSet || foundSet.isEmpty()) {
-            return Pair.newPair(0L, 0L);
-        }
-        long count = foundSet.getLongCardinality();
-
-        Long sum = IntStream.range(0, this.sliceSize())
-                .mapToLong(x -> (long) (1 << x) * RoaringBitmap.andCardinality(this.slices[x], foundSet))
-                .sum();
-
-        return Pair.newPair(sum, count);
-    }
 
     //------------------------------------------------------------------------------------------
 
@@ -517,7 +519,8 @@ public class Rbm32SliceIndex implements BitmapSliceIndex {
      */
     private int getValueInternal(int key) {
         int value = 0;
-        for (int i = 0; i < this.sliceSize(); i += 1) {
+        for (int i = 0; i < this.sliceSize; i += 1) {
+            // 切片 i 包含指定的 key 则关联的 value 第 i 位为 1
             if (this.slices[i].contains(key)) {
                 value |= (1 << i);
             }

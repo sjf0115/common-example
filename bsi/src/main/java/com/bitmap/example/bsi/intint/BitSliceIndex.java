@@ -9,13 +9,13 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.Collection;
 
-public interface BitmapSliceIndex {
+public interface BitSliceIndex {
     int sliceSize();
     long getLongCardinality();
     void clear();
     boolean isEmpty();
     void put(int key, int value);
-    void putAll(BitmapSliceIndex otherBsi);
+    void putAll(BitSliceIndex otherBsi);
     int get(int key);
     boolean containsKey(int key);
     boolean containsValue(int value);
@@ -29,6 +29,7 @@ public interface BitmapSliceIndex {
 
     RoaringBitmap compare(Operation operation, int value);
     RoaringBitmap compareRange(int start, int end);
+
     void serialize(ByteBuffer buffer) throws IOException;
     void serialize(DataOutput output) throws IOException;
     void deserialize(DataInput in) throws IOException;

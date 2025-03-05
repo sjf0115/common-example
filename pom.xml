@@ -18,6 +18,7 @@
         <module>druid-parser</module>
         <module>design-pattern</module>
         <module>javacc</module>
+        <module>httpclient</module>
     </modules>
 
     <properties>
@@ -40,6 +41,7 @@
         <mapstruct.version>1.5.5.Final</mapstruct.version>
         <freemarker.version>2.3.31</freemarker.version>
         <druid.version>1.2.20</druid.version>
+        <httpclient.version>5.4.2</httpclient.version>
     </properties>
 
     <dependencyManagement>
@@ -153,6 +155,13 @@
                 <groupId>com.alibaba</groupId>
                 <artifactId>druid</artifactId>
                 <version>${druid.version}</version>
+            </dependency>
+
+            <!-- HttpClient -->
+            <dependency>
+                <groupId>org.apache.httpcomponents.client5</groupId>
+                <artifactId>httpclient5</artifactId>
+                <version>${httpclient.version}</version>
             </dependency>
 
             <!-- log4j -->

@@ -5,7 +5,7 @@
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>com.example</groupId>
-    <artifactId>common.example</artifactId>
+    <artifactId>common-example</artifactId>
     <packaging>pom</packaging>
     <version>1.0-SNAPSHOT</version>
     <modules>
@@ -19,6 +19,8 @@
         <module>design-pattern</module>
         <module>javacc</module>
         <module>httpclient</module>
+        <module>common</module>
+        <module>typesafe-config</module>
     </modules>
 
     <properties>
@@ -42,6 +44,7 @@
         <freemarker.version>2.3.31</freemarker.version>
         <druid.version>1.2.20</druid.version>
         <httpclient.version>5.4.2</httpclient.version>
+        <typesafe.config.version>1.4.3</typesafe.config.version>
     </properties>
 
     <dependencyManagement>
@@ -162,6 +165,13 @@
                 <groupId>org.apache.httpcomponents.client5</groupId>
                 <artifactId>httpclient5</artifactId>
                 <version>${httpclient.version}</version>
+            </dependency>
+
+            <!-- Typesafe-config -->
+            <dependency>
+                <groupId>com.typesafe</groupId>
+                <artifactId>config</artifactId>
+                <version>${typesafe.config.version}</version>
             </dependency>
 
             <!-- log4j -->

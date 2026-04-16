@@ -13,7 +13,6 @@
         <module>opencsv</module>
         <module>jdbc</module>
         <module>freemarker</module>
-        <module>fmpp</module>
         <module>bsi</module>
         <module>druid-parser</module>
         <module>design-pattern</module>

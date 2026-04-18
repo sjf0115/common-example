@@ -15,7 +15,7 @@ import java.util.Properties;
  * 公众号：大数据生态
  * 日期：2026/4/16 22:44
  */
-public class ConfigParse {
+public class ConfigParseExample {
     public static void main(String[] args) {
         // 1. 从字符串解析（最灵活）
         // HOCON 格式

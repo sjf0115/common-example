@@ -95,8 +95,8 @@ public class ConfigParseExample {
         print(envConfig);
     }
 
-    // 合并多个动态源
-    /*public static void merge() {
+    // 7. 合并多个动态源
+    public static void merge() {
         Config config1 = ConfigFactory.parseString("{k1=1}");
         Config config2 = ConfigFactory.parseString("{k1=11,k2=2}");
         Config config3 = ConfigFactory.parseString("{k1=12,k2=21,k3=3}");
@@ -104,7 +104,7 @@ public class ConfigParseExample {
         // 优先级：config1 > config2 > config3
         Config finalConfig = config1.withFallback(config2).withFallback(config3);
         System.out.println("k1=" + finalConfig.getString("k1") + ", k2=" + finalConfig.getString("k2") + ", k3=" + finalConfig.getString("k3"));
-    }*/
+    }
 
     public static void main(String[] args) {
 //        parseString();
@@ -114,5 +114,6 @@ public class ConfigParseExample {
 //        parseURL();
 //        parseResources();
 //        parseSystemEnvironment();
+        merge();
     }
 }
